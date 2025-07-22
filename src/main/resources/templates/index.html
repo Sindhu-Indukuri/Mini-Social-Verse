@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Social Media Platform</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f1f1f1;
+    }
+    .container {
+      display: flex;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: #fff;
+      height: 100vh;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .sidebar h2 {
+      margin-top: 0;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    .sidebar ul li {
+      padding: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .sidebar ul li:hover {
+      background-color: #e0e0e0;
+    }
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      background-color: #fff;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .post-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .post-form input {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .post-form button {
+      padding: 10px 20px;
+      background-color: #1877f2;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .post {
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    .post h4, .post p {
+      margin: 5px 0;
+    }
+    .meta {
+      font-size: 12px;
+      color: #888;
+    }
+    .actions {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+    .auth-container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 30px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .auth-container h2 {
+      text-align: center;
+    }
+    .auth-container input, .auth-container button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .toggle-auth {
+      text-align: center;
+      color: #1877f2;
+      cursor: pointer;
+    }
+    .user-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  padding: 12px;
+  border-radius: 10px;
+  width: 350px;
+  background-color: #f9f9f9;
+}
+
+.profile-pic {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 15px;
+}
+
+.user-info h4 {
+  margin: 0 0 8px 0;
+}
+
+.action-buttons button {
+  margin-right: 10px;
+}
+#userSearch {
+  width: 300px;
+  padding: 8px;
+  margin-bottom: 20px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+    
+  </style>
+</head>
+<body>
+  <!-- 🔐 Login/Register Section -->
+  <div id="authBox" class="auth-container">
+    <h2 id="authTitle">Login</h2>
+    <input type="text" id="authUsername" placeholder="Username" class="hidden">
+    <input type="email" id="authEmail" placeholder="Email">
+    <input type="password" id="authPassword" placeholder="Password">
+    <button onclick="handleAuth()">Login</button>
+    <div class="toggle-auth" onclick="toggleAuth()">Don't have an account? Register</div>
+  </div>
+
+  <!-- 💬 Main App Section -->
+  <div id="mainApp" class="container" style="display: none;">
+    <!-- 📚 Sidebar -->
+    <div class="sidebar">
+      <div style="text-align:center;">
+        <!-- 📤 Hidden File Input -->
+        <input type="file" id="profileUpload" style="display:none" onchange="uploadProfilePic()" />
+
+        <!-- 👤 Clickable Profile Image -->
+        <img id="profileImage" src="" onclick="document.getElementById('profileUpload').click()"
+             style="width:200px;height:200px;border-radius:50%;object-fit:cover;cursor:pointer;">
+
+        <!-- 🙋 Username -->
+        <h2 id="currentUser">User</h2>
+      </div>
+
+      <ul>
+        <li onclick="showSection('posts')">Posts</li>
+        <li onclick="showSection('comments')">Comments</li>
+		<li onclick="loadViewSection()">view</li>
+        <li onclick="loadFriends()">Friends</li>
+      </ul>
+    </div>
+
+    <!-- 🧾 Main Content -->
+   <!-- 🧾 Main Content -->
+<!-- 🧾 Main Content -->
+<div class="main-content">
+  <!-- Post Form -->
+  <div class="post-form">
+    <div id="imageUploadArea" class="image-upload" style="border: 2px dashed #aaa; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+      <img id="imagePreview" style="max-width: 100%; max-height: 100%; display: none;" />
+      <span id="uploadIcon">📷</span>
+    </div>
+    <input type="file" id="postImage" accept="image/*" style="display: none;" />
+    <input type="text" id="postContent" placeholder="What's on your mind?" />
+    <button onclick="createPost()">Post</button>
+  </div>
+
+  <!-- 🔽 Dynamic Content Area -->
+  <div id="feed"></div>
+</div>
+
+
+
+<script>
+  const API = "http://localhost:8081/api";
+  let isLogin = true;
+  
+  function toggleAuth() {
+    isLogin = !isLogin;
+    document.getElementById('authTitle').innerText = isLogin ? 'Login' : 'Register';
+    document.querySelector('button').innerText = isLogin ? 'Login' : 'Register';
+    document.getElementById('authUsername').classList.toggle('hidden');
+    document.querySelector('.toggle-auth').innerText = isLogin
+      ? "Don't have an account? Register"
+      : "Already have an account? Login";
+  }
+
+  async function handleAuth() {
+	  const email = document.getElementById('authEmail').value;
+	  const password = document.getElementById('authPassword').value;
+	  const username = document.getElementById('authUsername').value;
+
+	  const payload = isLogin ? { email, password } : { username, email, password };
+	  const endpoint = isLogin ? '/users/login' : '/users/register';
+
+	  const res = await fetch(API + endpoint, {
+	    method: 'POST',
+	    headers: { 'Content-Type': 'application/json' },
+	    body: JSON.stringify(payload)
+	  });
+
+	  const data = await res.json();
+
+	  if (res.ok) {
+	    // ✅ Save user info in local storage
+	    localStorage.setItem('user', JSON.stringify(data));
+
+	    // ✅ Hide auth box, show main app
+	    document.getElementById('authBox').style.display = 'none';
+	    document.getElementById('mainApp').style.display = 'flex';
+
+	    // ✅ Set username
+	    document.getElementById("currentUser").innerText = data.username || "User";
+
+	    // ✅ Set profile image if available
+	    if (data.profilePicUrl && data.profilePicUrl.startsWith("/uploads")) {
+	      document.getElementById("profileImage").src = "http://localhost:8081" + data.profilePicUrl;
+	    } else {
+	      document.getElementById("profileImage").src = "default-profile.png"; // fallback image
+	    }
+
+	    loadPosts();
+	  } else {
+	    alert(data.message || 'Login/Register failed');
+	  }
+	}
+
+
+  async function uploadProfilePic() {
+    const input = document.getElementById('profileUpload');
+    const file = input.files[0];
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (!file || !user) return alert("Please choose a file or login");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", user.id);
+
+    const res = await fetch(`${API}/users/upload-profile`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const url = await res.text();
+    if (res.ok) {
+      // ✅ Set the profile image in the frontend
+      document.getElementById("profileImage").src = "http://localhost:8081" + url;
+
+      // ✅ Update local storage
+      user.profilePicUrl = url;
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      alert("Failed to upload image");
+    }
+  }
+
+
+  async function loadPosts() {
+	  const feed = document.getElementById('feed');
+	  const user = JSON.parse(localStorage.getItem("user"));
+
+	  try {
+	    const res = await fetch(`${API}/posts/all`);
+	    const posts = await res.json();
+	    feed.innerHTML = '<h3>All Posts</h3>';
+
+	    posts.reverse().forEach(post => {
+	      const div = document.createElement('div');
+	      div.className = 'post';
+	      div.innerHTML = `
+	        <h4>${post.user.username}</h4>
+	        <p>${post.content}</p>
+	        ${post.imageUrl ? `<img src="http://localhost:8081${post.imageUrl}" style="max-width:300px;">` : ""}
+	        <div class="actions">
+	          <span class="like-btn" data-post-id="${post.id}" style="cursor:pointer;">
+	            ❤️ <span id="like-count-${post.id}">${post.likedBy?.length || 0}</span> Likes
+	          </span>
+	          <span>💬 <span id="comment-count-${post.id}">${post.comments?.length || 0}</span> Comments</span>
+	        </div>
+	        <div>
+	          <input type="text" id="comment-${post.id}" placeholder="Write a comment..." style="width:70%" />
+	          <button onclick="addComment(${post.id})">Comment</button>
+	        </div>
+	      `;
+	      feed.appendChild(div);
+	    });
+
+	    // ✅ Attach like button event handlers after rendering
+	    document.querySelectorAll('.like-btn').forEach(btn => {
+	      btn.addEventListener('click', () => {
+	        const postId = btn.getAttribute('data-post-id');
+	        const key = `liked-${postId}-${user.id}`;
+
+	        if (!localStorage.getItem(key)) {
+	          likePost(postId);
+	          localStorage.setItem(key, "true");
+	        } else {
+	          alert("You already liked this post.");
+	        }
+	      });
+	    });
+
+	  } catch (err) {
+	    console.error("Failed to load posts", err);
+	  }
+	}
+
+
+  async function addComment(postId) {
+    const content = document.getElementById(`comment-${postId}`).value;
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!content.trim()) return alert("Comment cannot be empty!");
+
+    const res = await fetch(`${API}/comments/add/${postId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': user.id
+      },
+      body: JSON.stringify({ content })
+    });
+
+    if (res.ok) {
+      document.getElementById(`comment-${postId}`).value = '';
+      const countEl = document.getElementById(`comment-count-${postId}`);
+      if (countEl) {
+        countEl.innerText = parseInt(countEl.innerText) + 1;
+      }
+    } else {
+      alert("Failed to add comment.");
+    }
+  }
+
+  async function likePost(postId) {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const res = await fetch(`${API}/posts/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId: postId, userId: user.id })
+    });
+
+    if (res.ok) {
+      const countEl = document.getElementById(`like-count-${postId}`);
+      if (countEl) {
+        countEl.innerText = parseInt(countEl.innerText) + 1;
+      }
+    } else {
+      alert("Failed to like post.");
+    }
+  }
+
+  async function loadCommentsOnMyPosts() {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const feed = document.getElementById('feed');
+    feed.innerHTML = "<h3>Comments on Your Posts</h3>";
+
+    try {
+      const res = await fetch(`${API}/comments/comments/my-posts/${user.id}`);
+      const comments = await res.json();
+
+      if (comments.length === 0) {
+        feed.innerHTML += "<p>No comments on your posts yet.</p>";
+        return;
+      }
+
+      comments.forEach(comment => {
+        const div = document.createElement('div');
+        div.className = 'post';
+        div.innerHTML = `
+          <p><strong>${comment.user?.username || 'Anonymous'}</strong> commented:</p>
+          <p>"${comment.content}"</p>
+          <p class="meta">💬 On your post: <em>${comment.post?.content || '(deleted post)'}</em></p>
+          <hr />
+        `;
+        feed.appendChild(div);
+      });
+    } catch (error) {
+      console.error("Failed to load comments", error);
+      feed.innerHTML += "<p>Error loading comments.</p>";
+    }
+  }
+
+  /*async function createPost() {
+    const content = document.getElementById('postContent').value;
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (content.trim() === '' || !user) return;
+
+    const res = await fetch(`${API}/posts/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': user.id
+      },
+      body: JSON.stringify({ content })
+    });
+
+    if (res.ok) {
+      document.getElementById('postContent').value = '';
+      loadPosts();
+    } else {
+      alert('Failed to post');
+    }
+  }*/
+  
+  
+
+  async function createPost() {
+    const content = document.getElementById("postContent").value;
+    const imageFile = document.getElementById("postImage").files[0];
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+
+    const formData = new FormData();
+    formData.append("content", content);
+    formData.append("userId", currentUser.id);
+    if (imageFile) formData.append("image", imageFile);
+
+    const res = await fetch("http://localhost:8081/api/posts/create", {
+      method: "POST",
+      body: formData
+    });
+
+    if (res.ok) {
+      alert("Post created successfully");
+      document.getElementById("postContent").value = "";
+      document.getElementById("postImage").value = "";
+      document.getElementById("imagePreview").style.display = "none";
+      document.getElementById("uploadIcon").style.display = "block";
+      loadPosts();
+    } else {
+      alert("Failed to post");
+    }
+  }
+
+  /*async function loadViewSection() {
+	  const feed = document.getElementById("feed");
+	  const currentUser = JSON.parse(localStorage.getItem("user"));
+	  feed.innerHTML = `<h2>View Users</h2>
+	    <input type="text" id="userSearch" placeholder="Search by username..." onkeyup="filterUsers()" />
+	    <div class="user-grid" id="userGrid"></div>`;
+
+	  const res = await fetch("http://localhost:8081/api/users/users");
+	  const users = await res.json();
+
+	  const userGrid = document.getElementById("userGrid");
+	  userGrid.innerHTML = users
+	    .filter(user => user.id !== currentUser.id)
+	    .map(user => `
+	      <div class="user-card" data-username="${user.username.toLowerCase()}">
+	        <img src="http://localhost:8081${user.profilePicUrl || '/default.png'}" class="profile-pic">
+	        <div class="user-info">
+	          <h4>${user.username}</h4>
+	          <div class="action-buttons">
+	          <button onclick="toggleFollow(${user.id}, this)">
+              ${isFollowing ? "Unfollow" : "Follow"}
+	          </div>
+	        </div>
+	      </div>
+	    `).join('');
+	}*/
+  async function loadViewSection() {
+	  const feed = document.getElementById("feed");
+	  const currentUser = JSON.parse(localStorage.getItem("user"));
+	  feed.innerHTML = `<h2>View Users</h2>
+	    <input type="text" id="userSearch" placeholder="Search by username..." onkeyup="filterUsers()" />
+	    <div class="user-grid" id="userGrid"></div>`;
+
+	  const res = await fetch("http://localhost:8081/api/users/users");
+	  const users = await res.json();
+
+	  const followingRes = await fetch(`http://localhost:8081/api/users/users/${currentUser.id}/following`);
+	  const following = await followingRes.json();
+	  const followingIds = following.map(u => u.id);
+
+	  const userGrid = document.getElementById("userGrid");
+	  userGrid.innerHTML = users
+	    .filter(user => user.id !== currentUser.id)
+	    .map(user => {
+	      const isFollowing = followingIds.includes(user.id);
+	      return `
+	        <div class="user-card" data-username="${user.username.toLowerCase()}">
+	          <img src="http://localhost:8081${user.profilePicUrl || '/default.png'}" class="profile-pic">
+	          <div class="user-info">
+	            <h4>${user.username}</h4>
+	            <div class="action-buttons">
+	              <button onclick="toggleFollow(${user.id}, this)">
+	                ${isFollowing ? "Unfollow" : "Follow"}
+	              </button>
+	            </div>
+	          </div>
+	        </div>
+	      `;
+	    }).join('');
+	}
+
+  function filterUsers() {
+	  const searchInput = document.getElementById("userSearch").value.toLowerCase();
+	  const userCards = document.querySelectorAll(".user-card");
+
+	  userCards.forEach(card => {
+	    const username = card.dataset.username;
+	    if (username.includes(searchInput)) {
+	      card.style.display = "block";
+	    } else {
+	      card.style.display = "none";
+	    }
+	  });
+	}
+  async function toggleFollow(targetUserId, btn) {
+	  const currentUser = JSON.parse(localStorage.getItem('user'));
+	  const isCurrentlyFollowing = btn.innerText === "Unfollow";
+
+	  const endpoint = isCurrentlyFollowing
+	    ? `http://localhost:8081/api/users/users/${currentUser.id}/unfollow/${targetUserId}`
+	    : `http://localhost:8081/api/users/users/${currentUser.id}/follow/${targetUserId}`;
+
+	  const res = await fetch(endpoint, {
+	    method: 'POST'
+	  });
+
+	  if (res.ok) {
+	    btn.innerText = isCurrentlyFollowing ? "Follow" : "Unfollow";
+	    alert(isCurrentlyFollowing ? "Unfollowed successfully!" : "Followed successfully!");
+	    loadFriends(); // Refresh friend section
+	  } else {
+	    alert("Failed to update follow status.");
+	  }
+	}
+  async function unfollowFriend(targetUserId) {
+	  const currentUser = JSON.parse(localStorage.getItem("user"));
+
+	  const endpoint = `http://localhost:8081/api/users/users/${currentUser.id}/unfollow/${targetUserId}`;
+
+	  const res = await fetch(endpoint, {
+	    method: 'POST'
+	  });
+
+	  if (res.ok) {
+	    alert("Unfollowed successfully!");
+	    loadFriends(); // Refresh friend list after unfollow
+	  } else {
+	    alert("Failed to unfollow user.");
+	  }
+	}
+
+
+
+  /*async function toggleFollow(targetUserId) {
+	  const currentUser = JSON.parse(localStorage.getItem('user'));
+	  const res = await fetch(`http://localhost:8081/api/users/users/${currentUser.id}/follow/${targetUserId}`, {
+	    method: 'POST'
+	  });
+
+	  if (res.ok) {
+	    alert("Followed successfully!");
+	    loadFriends(); // 👈 reload Friends section
+	  } else {
+	    alert("Failed to follow user.");
+	  }
+	*/
+  async function loadFriends() {
+	  const currentUser = JSON.parse(localStorage.getItem("user"));
+	  const feed = document.getElementById("feed");
+	  feed.innerHTML = "<h3>Loading friends...</h3>";
+
+	  const res = await fetch(`http://localhost:8081/api/users/users/${currentUser.id}/following`);
+	  const friends = await res.json();
+
+	  if (!friends.length) {
+	    feed.innerHTML = "<p>No friends yet.</p>";
+	    return;
+	  }
+
+	  feed.innerHTML = `<h2>My Friends</h2><div class="user-grid">
+	    ${friends.map(friend => `
+	      <div class="user-card">
+	        <img src="http://localhost:8081${friend.profilePicUrl || '/default.png'}" class="profile-pic">
+	    <div class="user-info">
+        <h4>${friend.username}</h4>
+        <div class="action-buttons">
+          <button onclick="unfollowFriend(${friend.id})">Unfollow</button>
+        </div>
+      </div>
+    </div>
+  `).join('')}
+</div>`;
+	}
+
+
+  function showSection(name) {
+	  const feed = document.getElementById('feed');
+	  feed.innerHTML = `<h3>Loading ${name}...</h3>`;
+
+	  if (name === 'posts') {
+	    loadPosts();
+	  } else if (name === 'comments') {
+	    loadCommentsOnMyPosts();
+	  } else if (name === 'view') {
+	    loadViewSection(); // FIXED HERE
+	  } else {
+	    loadFriends();
+	  }
+	}
+  window.onload = () => {
+	  const imageUploadArea = document.getElementById("imageUploadArea");
+	  const postImage = document.getElementById("postImage");
+	  const imagePreview = document.getElementById("imagePreview");
+	  const uploadIcon = document.getElementById("uploadIcon");
+
+	  imageUploadArea.addEventListener("click", () => {
+	    postImage.click();
+	  });
+
+	  postImage.addEventListener("change", function () {
+	    const file = this.files[0];
+	    if (file) {
+	      const reader = new FileReader();
+	      reader.onload = function (e) {
+	        imagePreview.src = e.target.result;
+	        imagePreview.style.display = "block";
+	        uploadIcon.style.display = "none";
+	      };
+	      reader.readAsDataURL(file);
+	    }
+	  });
+	};
+
+
+
+</script>
